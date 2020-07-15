@@ -11,6 +11,12 @@
 #include <string.h>
 #include <loadfile.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <errno.h>
+#include <limits.h>
 #include <sbv_patches.h>
 #include <libcdvd.h>
 #include <libpad.h>
@@ -26,13 +32,11 @@
 #include <osd_config.h>
 #include <libpwroff.h>
 #include <usbhdfsd-common.h>
-#include <fileXio_rpc.h>
 #include <smod.h>
 #include <smem.h>
 #include <debug.h>
 #include <ps2smb.h>
 #include "config.h"
-#include <sys/fcntl.h>
 
 // Last Played Auto Start
 #include <time.h>
@@ -46,7 +50,7 @@
 #endif
 
 //Master password for disabling the parental lock.
-#define OPL_PARENTAL_LOCK_MASTER_PASS	"989765"
+#define OPL_PARENTAL_LOCK_MASTER_PASS "989765"
 
 //IO type IDs
 #define IO_CUSTOM_SIMPLEACTION 1 // handler for parameter-less actions
@@ -74,7 +78,7 @@ int loadConfig(int types);
 int saveConfig(int types, int showUI);
 void applyConfig(int themeID, int langID);
 void menuDeferredUpdate(void *data);
-void moduleUpdateMenu(int mode, int themeChanged);
+void moduleUpdateMenu(int mode, int themeChanged, int langChanged);
 void handleHdlSrv();
 void deinit(int exception, int modeSelected);
 
@@ -118,7 +122,7 @@ int gAPPStartMode;
 
 int gAutosort;
 int gAutoRefresh;
-int gUseInfoScreen;
+int gEnableNotifications;
 int gEnableArt;
 int gWideScreen;
 int gVMode; // 0 - Auto, 1 - PAL, 2 - NTSC
@@ -133,8 +137,11 @@ int gEnableBootSND;
 int gSFXVolume;
 int gBootSndVolume;
 
-int gFadeDelay;
-int toggleSfx;
+int gCheatSource;
+int gGSMSource;
+int gPadEmuSource;
+
+int showCfgPopup;
 
 #ifdef IGS
 #define IGS_VERSION "0.1"
@@ -174,12 +181,14 @@ int gRememberLastPlayed;
 int KeyPressedOnce;
 int gAutoStartLastPlayed;
 int RemainSecs, DisableCron;
-double CronStart;
+clock_t CronStart;
 
 unsigned char gDefaultBgColor[3];
 unsigned char gDefaultTextColor[3];
 unsigned char gDefaultSelTextColor[3];
 unsigned char gDefaultUITextColor[3];
+
+void setDefaultColors(void);
 
 #define MENU_ITEM_HEIGHT 19
 

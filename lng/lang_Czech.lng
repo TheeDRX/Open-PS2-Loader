@@ -1,5 +1,5 @@
 # Czech translation by jimmysmith
-# For Open PS2 Loader 0.9.3+ betas - Official OPL Beta thread @http://psx-scene.com/forums/f150/open-ps2-loader-official-beta-revisions-releases-156209/
+# For Open PS2 Loader 0.9.3+ betas - Official OPL Beta thread @https://www.psx-place.com/threads/open-ps2-loader-official-beta-releases.21573/
 Czech
 Open PS2 Loader %s
 Uložit změny
@@ -7,7 +7,7 @@ Zpět
 Síťová konfigurace
 Pokročilé možnosti
 <žádné hodnoty>
-Nastavení uloženo...
+Settings saved to %s
 Chyba při ukládání nastavení!
 Ukončit
 Nastavení
@@ -19,7 +19,7 @@ Aplikace
 Skin
 Jazyk
 Systém bude vypnut.
-Ukončit a vrátit se do Prohlížeče/OSDSYS?
+Ukončit a vrátit se do Prohlížeče?
 Zrušit update?
 %d: Harddisk nebyl detekován
 %d: Harddisk není naformátován
@@ -41,7 +41,7 @@ Kolečko
 Křížek
 Seznam her
 Nast. hry
-Odebrat veškeré nastavení
+Remove Settings
 Odebrat všechny klíče pro hru
 Skrolování
 Pomalu
@@ -106,7 +106,7 @@ Pamatovat posledně hranou hru
 Tlačítko Select
 Chyba, hra je fragmentovaná
 Chyba, nemůžu spustit hru
-Test
+Test Changes
 Nechte prázdné pro přihlášení GUEST účtu
 Přesné čtení
 Synchronní mód
@@ -114,8 +114,8 @@ Unhook Syscalls
 Přeskočit videa
 Emulovat DVD-DL
 Vypnout IGR
-Vyšší adresa modulu
-Skrýt modul dev9
+Unused
+Unused
 Změna velikosti přeformátuje VMC
 Vytvořit
 Start
@@ -143,7 +143,7 @@ Automatický HDD spin-down
 Video mód
 Barva dialogu
 Vybraná barva
-Zobrazit stránku s informacemi
+Reset Colors
 Info
 Custom ELF
 Barva zvýraznení
@@ -197,7 +197,7 @@ Chyba: nepodařilo se nahrát soubor s cheaty
 Nenalezeny žádné cheaty
 Stáhnout původní verze konfigů
 Síťový update
-Stáhnout znovu již existující záznamy?
+Overwrite Existing Records
 Update selhal.
 Připojení k update serveru se nezdařilo.
 Update kompletní.
@@ -227,8 +227,8 @@ Turns on/off vibration for Pad Emulator selected port.
 Usb bluetooth adapter mac address:
 DS Controller paired to mac address:
 Pair
-Pair DS controller
-Pair DS controller with bluetooth adapter mac address.
+Pair DS Controller
+Pair DS Controller with bluetooth adapter mac address.
 Not connected
 Bluetooth adapter information
 Shows more information and supported features
@@ -257,3 +257,27 @@ Parental lock disabled.
 Build Options:
 Error - this password cannot be used.
 VMC %s file is fragmented. Continue with Memory Card in slot %d?
+Audio Settings
+Enable Sound Effects
+Enable Boot Sound
+Sound Effects Volume
+Boot Sound Volume
+Confirm video mode change?
+Cache Game List (HDD)
+Enable Notifications
+%s loaded from %s
+Game Menu
+Game settings saved.
+%s settings removed.
+Overwrites existing game compatibility settings when enabled.
+Settings Mode
+Global
+Per Game
+All
+Select settings to remove.
+Support Forums:
+Title
+Genre
+Release
+Developer
+Description

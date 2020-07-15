@@ -123,7 +123,7 @@ static void longLseek(int fd, unsigned int lba)
         lseek(fd, INT_MAX / 2048 * 2048, SEEK_SET);
 
         remaining = lba - INT_MAX / 2048;
-        while(remaining > 0) {
+        while (remaining > 0) {
             toSeek = remaining > INT_MAX / 2048 ? INT_MAX / 2048 : remaining;
             lseek(fd, toSeek * 2048, SEEK_CUR);
             remaining -= toSeek;
@@ -516,6 +516,7 @@ static int IsofsMount(iop_file_t *f, const char *fsname, const char *devname, in
     WaitSema(MountPoint.sema);
 
     memset(&MountPoint, 0, sizeof(struct MountData));
+    MountPoint.fd = -1;
 
     if ((fd = open(devname, O_RDONLY)) >= 0) {
         if ((result = ProbeISO9660(fd, 16, &MountPoint.layer_info[0])) == 0)

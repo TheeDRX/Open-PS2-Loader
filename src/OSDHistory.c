@@ -13,6 +13,9 @@
 #include <limits.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/fcntl.h>
+#include <sys/unistd.h>
 
 #include "include/util.h"
 #include "include/OSDHistory.h"
@@ -35,18 +38,18 @@ int CreateSystemDataFolder(const char *path, char FolderRegionLetter)
 
     sprintf(fullpath, "%s/icon.sys", path);
     if ((fd = open(fullpath, O_RDONLY)) < 0) {
-        mkdir(path);
+        mkdir(path, 0777);
         if ((fd = open(fullpath, O_CREAT | O_TRUNC | O_WRONLY)) >= 0) {
-           switch(FolderRegionLetter) {
-               case 'I':
-                   icon = icon_sys_J;
-                   size = SONY_SYSDATA_ICON_SYS_SIZE;
-                   break;
-               case 'C':
+            switch (FolderRegionLetter) {
+                case 'I':
+                    icon = icon_sys_J;
+                    size = SONY_SYSDATA_ICON_SYS_SIZE;
+                    break;
+                case 'C':
                     icon = icon_sys_C;
                     size = SONY_SYSDATA_ICON_SYS_SIZE;
-                   break;
-               default: //case 'A':
+                    break;
+                default: //case 'A':
                     icon = icon_sys_A;
                     size = SONY_SYSDATA_ICON_SYS_SIZE;
                     break;
@@ -109,12 +112,13 @@ int AddOldHistoryFileRecord(const char *path, const struct HistoryEntry *OldHist
     return result;
 }
 
-static u16 GetTimestamp(void) {
+static u16 GetTimestamp(void)
+{
     //The original obtained the time and date from globals.
     //return OSD_HISTORY_SET_DATE(currentYear, currentMonth, currentDate);
     sceCdCLOCK time;
     sceCdReadClock(&time);
-    return OSD_HISTORY_SET_DATE(btoi(time.year), btoi(time.month&0x7F), btoi(time.day));
+    return OSD_HISTORY_SET_DATE(btoi(time.year), btoi(time.month & 0x7F), btoi(time.day));
 }
 
 int AddHistoryRecord(const char *name)
@@ -200,7 +204,7 @@ int AddHistoryRecord(const char *name)
         }
     }
 
-/*	i = 0;
+    /*	i = 0;
 	do {	//Original does this. I guess, it is used to ensure that the next random value is truly random?
 		rand();
 		i++;
@@ -215,10 +219,10 @@ int AddHistoryRecord(const char *name)
                 BlankSlotList[NumBlankSlots] = i;
                 NumBlankSlots++;
             } else {
-                 //Not present in v1.0x.
-                 if(HistoryEntries[i].ShiftAmount == 0x7) {
-                     NumSlotsUsed++;
-                 }
+                //Not present in v1.0x.
+                if (HistoryEntries[i].ShiftAmount == 0x7) {
+                    NumSlotsUsed++;
+                }
             }
         }
 
@@ -244,7 +248,7 @@ int AddHistoryRecord(const char *name)
         }
     }
 
-    //Unlike the original, save here. 
+    //Unlike the original, save here.
     return SaveHistoryFile(path, HistoryEntries);
 }
 

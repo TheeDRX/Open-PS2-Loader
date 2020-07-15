@@ -9,6 +9,12 @@
 #include "include/ioman.h"
 #include <string.h>
 
+// FIXME: We should not need this function.
+//        Use newlib's 'stat' to get GMT time.
+#define NEWLIB_PORT_AWARE
+#include <fileXio_rpc.h> // iox_stat_t, fileXioGetStat
+int configGetStat(config_set_t *configSet, iox_stat_t *stat);
+
 static u32 currentUID = 0;
 static config_set_t configFiles[CONFIG_INDEX_COUNT];
 static char legacyNetConfigPath[256] = "mc?:SYS-CONF/IPCONFIG.DAT";
@@ -17,6 +23,7 @@ static const char *configFilenames[CONFIG_INDEX_COUNT] = {
     "conf_last.cfg",
     "conf_apps.cfg",
     "conf_network.cfg",
+    "conf_game.cfg",
 };
 
 static int strToColor(const char *string, unsigned char *color)
@@ -98,6 +105,7 @@ static int parsePrefix(char *line, char *prefix)
     if (colpos && colpos != line) {
         // copy the name and the value
         strncpy(prefix, line, colpos - line);
+        prefix[colpos - line] = 0;
 
         return 1;
     } else {
@@ -151,6 +159,31 @@ static struct config_value_t *getConfigItemForName(config_set_t *configSet, cons
     return val;
 }
 
+static char cfgDevice[8];
+
+char *configGetDir(void)
+{
+    char *path = cfgDevice;
+    return path;
+}
+
+void configPrepareNotifications(char *prefix)
+{
+    int mcID;
+    char *colpos;
+
+    snprintf(cfgDevice, sizeof(cfgDevice), prefix);
+    if (!strncmp(cfgDevice, "mc?", 3)) {
+        mcID = getmcID();
+        cfgDevice[2] = mcID;
+    }
+
+    if ((colpos = strchr(cfgDevice, ':')) != NULL)
+        *(colpos + 1) = '\0';
+
+    showCfgPopup = 1;
+}
+
 void configInit(char *prefix)
 {
     char path[256];
@@ -165,6 +198,8 @@ void configInit(char *prefix)
         snprintf(path, sizeof(path), "%s/%s", prefix, configFilenames[i]);
         configAlloc(1 << i, &configFiles[i], path);
     }
+
+    configPrepareNotifications(prefix);
 }
 
 void configSetMove(char *prefix)
@@ -181,6 +216,8 @@ void configSetMove(char *prefix)
         snprintf(path, sizeof(path), "%s/%s", prefix, configFilenames[i]);
         configMove(&configFiles[i], path);
     }
+
+    configPrepareNotifications(prefix);
 }
 
 void configEnd()
@@ -380,8 +417,8 @@ static int configReadLegacyIP(void)
     if (fd >= 0) {
         char ipconfig[256];
         int size = getFileSize(fd);
-        fileXioRead(fd, &ipconfig, size);
-        fileXioClose(fd);
+        read(fd, &ipconfig, size);
+        close(fd);
 
         sscanf(ipconfig, "%d.%d.%d.%d %d.%d.%d.%d %d.%d.%d.%d", &ps2_ip[0], &ps2_ip[1], &ps2_ip[2], &ps2_ip[3],
                &ps2_netmask[0], &ps2_netmask[1], &ps2_netmask[2], &ps2_netmask[3],
@@ -609,4 +646,3 @@ void configRemoveVMC(config_set_t *configSet, int slot)
     snprintf(gkey, sizeof(gkey), "%s_%d", CONFIG_ITEM_VMC, slot);
     configRemoveKey(configSet, gkey);
 }
-

@@ -10,7 +10,7 @@
 #define CDVDreg_HOWTO (*(volatile unsigned char *)0xBF402006)
 #define CDVDreg_ABORT (*(volatile unsigned char *)0xBF402007)
 #define CDVDreg_PWOFF (*(volatile unsigned char *)0xBF402008)
-#define CDVDreg_9 (*(volatile unsigned char *)0xBF402008)
+#define CDVDreg_9 (*(volatile unsigned char *)0xBF402009)
 #define CDVDreg_STATUS (*(volatile unsigned char *)0xBF40200A)
 #define CDVDreg_B (*(volatile unsigned char *)0xBF40200B)
 #define CDVDreg_C (*(volatile unsigned char *)0xBF40200C)
@@ -159,7 +159,8 @@ enum CDIOC_CODE {
 };
 
 // DMA/reading alignment correction buffer. Used by CDVDMAN and CDVDFSV.
-#define CDVDMAN_FS_SECTORS 6 //The size of the actual buffer within CDVDMAN is CDVDMAN_FS_SECTORS+2.
+//The minimum size is 2, as one sector may be used for buffer alignment correction.
+#define CDVDMAN_FS_SECTORS 8
 
 //Codes for use with sceCdSC()
 #define CDSC_GET_DEBUG_STATUS 0xFFFFFFF0 //Get debug status flag.

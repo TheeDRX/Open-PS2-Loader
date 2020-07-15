@@ -13,14 +13,17 @@
 #include "include/cheatman.h"
 #include "modules/iopcore/common/cdvd_config.h"
 
+#define NEWLIB_PORT_AWARE
+#include <fileXio_rpc.h> // fileXioDevctl(ethBase, SMB_***)
+
 #include "include/nbns.h"
 #include "httpclient.h"
 
 static char ethPrefix[40]; //Contains the full path to the folder where all the games are.
 static char *ethBase;
 static int ethULSizePrev = -2;
-static unsigned char ethModifiedCDPrev[8];
-static unsigned char ethModifiedDVDPrev[8];
+static time_t ethModifiedCDPrev;
+static time_t ethModifiedDVDPrev;
 static int ethGameCount = 0;
 static unsigned char ethModulesLoaded = 0;
 static base_game_info_t *ethGames = NULL;
@@ -256,7 +259,10 @@ static void ethInitSMB(void)
         // update Themes
         char path[256];
         sprintf(path, "%sTHM", ethPrefix);
-        thmAddElements(path, "\\", ethGameList.mode);
+        thmAddElements(path, "\\", 1);
+
+        sprintf(path, "%sLNG", ethPrefix);
+        lngAddLanguages(path, "\\", ethGameList.mode);
 
         sbCreateFolders(ethPrefix, 1);
     } else if (gPCShareName[0] || !(gNetworkStartup >= ERROR_ETH_SMB_OPENSHARE)) {
@@ -418,8 +424,8 @@ void ethInit(void)
         LOG("ETHSUPPORT Init\n");
         ethBase = "smb0:";
         ethULSizePrev = -2;
-        memset(ethModifiedCDPrev, 0, sizeof(ethModifiedCDPrev));
-        memset(ethModifiedDVDPrev, 0, sizeof(ethModifiedDVDPrev));
+        ethModifiedCDPrev = 0;
+        ethModifiedDVDPrev = 0;
         ethGameCount = 0;
         ethGames = NULL;
         configGetInt(configGetByType(CONFIG_OPL), "eth_frames_delay", &ethGameList.delay);
@@ -446,22 +452,22 @@ static int ethNeedsUpdate(void)
         result = 1;
 
     if (gNetworkStartup == 0) {
-        iox_stat_t stat;
+        struct stat st;
         char path[256];
 
         sprintf(path, "%sCD", ethPrefix);
-        if (fileXioGetStat(path, &stat) != 0)
-            memset(stat.mtime, 0, sizeof(stat.mtime));
-        if (memcmp(ethModifiedCDPrev, stat.mtime, sizeof(ethModifiedCDPrev))) {
-            memcpy(ethModifiedCDPrev, stat.mtime, sizeof(ethModifiedCDPrev));
+        if (stat(path, &st) != 0)
+            st.st_mtime = 0;
+        if (ethModifiedCDPrev != st.st_mtime) {
+            ethModifiedCDPrev = st.st_mtime;
             result = 1;
         }
 
         sprintf(path, "%sDVD", ethPrefix);
-        if (fileXioGetStat(path, &stat) != 0)
-            memset(stat.mtime, 0, sizeof(stat.mtime));
-        if (memcmp(ethModifiedDVDPrev, stat.mtime, sizeof(ethModifiedDVDPrev))) {
-            memcpy(ethModifiedDVDPrev, stat.mtime, sizeof(ethModifiedDVDPrev));
+        if (stat(path, &st) != 0)
+            st.st_mtime = 0;
+        if (ethModifiedDVDPrev != st.st_mtime) {
+            ethModifiedDVDPrev = st.st_mtime;
             result = 1;
         }
 
@@ -668,10 +674,10 @@ static void ethLaunchGame(int id, config_set_t *configSet)
     }
 
     if (gPS2Logo) {
-        int fd = fileXioOpen(partname, O_RDONLY, 0666);
+        int fd = open(partname, O_RDONLY, 0666);
         if (fd >= 0) {
             EnablePS2Logo = CheckPS2Logo(fd, 0);
-            fileXioClose(fd);
+            close(fd);
         }
     }
 
@@ -701,7 +707,7 @@ static void ethLaunchGame(int id, config_set_t *configSet)
         strcpy(filename, game->startup);
     deinit(NO_EXCEPTION, ETH_MODE); // CAREFUL: deinit will call ethCleanUp, so ethGames/game will be freed
 
-    sysLaunchLoaderElf(filename,  "ETH_MODE", size_smb_cdvdman_irx, &smb_cdvdman_irx, size_mcemu_irx, &smb_mcemu_irx, EnablePS2Logo, compatmask);
+    sysLaunchLoaderElf(filename, "ETH_MODE", size_smb_cdvdman_irx, &smb_cdvdman_irx, size_mcemu_irx, &smb_mcemu_irx, EnablePS2Logo, compatmask);
 }
 
 static config_set_t *ethGetConfig(int id)
@@ -769,8 +775,7 @@ static void smbGetAppsPath(char *path, int max)
 static item_list_t ethGameList = {
     ETH_MODE, 1, 0, 0, MENU_MIN_INACTIVE_FRAMES, ETH_MODE_UPDATE_DELAY, "ETH Games", _STR_NET_GAMES, &smbGetAppsPath, &ethInit, &ethNeedsUpdate,
     &ethUpdateGameList, &ethGetGameCount, &ethGetGame, &ethGetGameName, &ethGetGameNameLength, &ethGetGameStartup, &ethDeleteGame, &ethRenameGame,
-    &ethLaunchGame, &ethGetConfig, &ethGetImage, &ethCleanUp, &ethShutdown, &ethCheckVMC, ETH_ICON
-};
+    &ethLaunchGame, &ethGetConfig, &ethGetImage, &ethCleanUp, &ethShutdown, &ethCheckVMC, ETH_ICON};
 
 static int ethReadNetConfig(void)
 {
@@ -778,9 +783,9 @@ static int ethReadNetConfig(void)
     int result;
 
     if ((result = ps2ip_getconfig("sm0", &ip_info)) >= 0) {
-        lastIP = *(struct ip4_addr*)&ip_info.ipaddr;
-        lastNM = *(struct ip4_addr*)&ip_info.netmask;
-        lastGW = *(struct ip4_addr*)&ip_info.gw;
+        lastIP = *(struct ip4_addr *)&ip_info.ipaddr;
+        lastNM = *(struct ip4_addr *)&ip_info.netmask;
+        lastGW = *(struct ip4_addr *)&ip_info.gw;
     } else {
         ip4_addr_set_zero(&lastIP);
         ip4_addr_set_zero(&lastNM);

@@ -93,9 +93,9 @@ extern struct irx_export_table _exp_pademu;
 
 int _start(int argc, char *argv[])
 {
-    u8 pad_vibration = 0xFF;
+    u8 pad_vibration = 0x03;
 
-    pad_enable = 0xFF;
+    pad_enable = 0x03;
 
     if (argc > 1) {
         pad_enable = argv[1][0];
@@ -210,10 +210,11 @@ void pademu_hookSio2man(sio2_transfer_data_t *td, Sio2McProc sio2proc)
     if ((ctrl & 0xF0) == 0x40) {
         if (td->port_ctrl2[port1] == 0x00030064 && td->in[0] == 0x21 && mtap_enabled) {
             sio2proc = pademu_mtap;
-        } else if(td->in[0] == 0x01) {
+        } else if (td->in[0] == 0x01) {
             if (port2 == 1) { //2 sio cmds
                 if (mtap_inited) {
                     if (pad[0].enabled) {
+                        td->in[0] = 0x00;
                         sio2proc(td);
                         sio2proc = pademu;
                     }
@@ -221,7 +222,24 @@ void pademu_hookSio2man(sio2_transfer_data_t *td, Sio2McProc sio2proc)
                     if (pad[0].enabled && pad[1].enabled) { //emulating 2 pads
                         sio2proc = pademu;
                     } else if (pad[0].enabled || pad[1].enabled) { //only one
+                        if (pad[0].enabled) {
+                            ctrl = 0;
+                        } else if (pad[1].enabled) {
+                            for (ctrl = 5; ctrl < td->in_size - 3; ctrl++) {
+                                if (td->in[ctrl] == 0x01 && (td->in[ctrl + 1] & 0xF0) == 0x40 && td->in[ctrl + 2] == 0x00) {
+                                    if (ctrl != 5 && ctrl != 9 && ctrl != 21)
+                                        continue;
+                                    else
+                                        break;
+                                }
+                            }
+                            if (ctrl + 3 == td->in_size) {
+                                return;
+                            }
+                        }
+                        td->in[ctrl] = 0x00;
                         sio2proc(td);
+                        td->in[ctrl] = 0x01;
                         sio2proc = pademu;
                     }
                 }
@@ -339,7 +357,7 @@ void pademu(sio2_transfer_data_t *td)
         out = td->out;
         port = port1;
         cmd_size = td->in_size;
-        
+
         if (mtap_inited) {
             port = mtap_slot;
         }
@@ -477,8 +495,7 @@ void pademu_cmd(int port, u8 *in, u8 *out, u8 out_size)
 }
 
 static u8 mtap_data[] = {
-    0xff, 0x80, 0x5a, 0x00, 0x00, 0x5a
-};
+    0xff, 0x80, 0x5a, 0x00, 0x00, 0x5a};
 
 #define MAX_SLOT 4
 

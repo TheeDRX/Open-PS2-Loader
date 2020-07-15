@@ -42,23 +42,25 @@ struct rm_mode
     short int PAR2; // Pixel Aspect Ratio 2 (For video modes with non-square pixels, like PAL/NTSC)
 };
 
+// clang-format off
 static struct rm_mode rm_mode_table[NUM_RM_VMODES] = {
     // 24 bit color mode with black borders
-    {-1,                 16,  640,   -1,  1, 4, GS_INTERLACED,    GS_FIELD, RM_ARATIO_4_3,  1,  1}, // AUTO
-    {GS_MODE_PAL,        16,  640,  512,  1, 4, GS_INTERLACED,    GS_FIELD, RM_ARATIO_4_3, 11, 10}, // PAL@50Hz
-    {GS_MODE_NTSC,       16,  640,  448,  1, 4, GS_INTERLACED,    GS_FIELD, RM_ARATIO_4_3, 54, 59}, // NTSC@60Hz
-    {GS_MODE_DTV_480P,   31,  640,  448,  1, 2, GS_NONINTERLACED, GS_FRAME, RM_ARATIO_4_3,  1,  1}, // DTV480P@60Hz
-    {GS_MODE_DTV_576P,   31,  640,  512,  1, 2, GS_NONINTERLACED, GS_FRAME, RM_ARATIO_4_3,  1,  1}, // DTV576P@50Hz
+    {-1,                 16,  640,   -1,  1, 4, GS_INTERLACED,    GS_FIELD, RM_ARATIO_4_3, -1, 15}, // AUTO
+    {GS_MODE_PAL,        16,  640,  512,  1, 4, GS_INTERLACED,    GS_FIELD, RM_ARATIO_4_3, 16, 15}, // PAL@50Hz
+    {GS_MODE_NTSC,       16,  640,  448,  1, 4, GS_INTERLACED,    GS_FIELD, RM_ARATIO_4_3, 14, 15}, // NTSC@60Hz
+    {GS_MODE_DTV_480P,   31,  640,  448,  1, 2, GS_NONINTERLACED, GS_FRAME, RM_ARATIO_4_3, 14, 15}, // DTV480P@60Hz
+    {GS_MODE_DTV_576P,   31,  640,  512,  1, 2, GS_NONINTERLACED, GS_FRAME, RM_ARATIO_4_3, 16, 15}, // DTV576P@50Hz
     {GS_MODE_VGA_640_60, 31,  640,  480,  1, 2, GS_NONINTERLACED, GS_FRAME, RM_ARATIO_4_3,  1,  1}, // VGA640x480@60Hz
     // 24 bit color mode full screen, multi-pass (2 passes, HIRES)
-    {GS_MODE_PAL,        16,  704,  576,  2, 4, GS_INTERLACED,    GS_FIELD, RM_ARATIO_4_3, 11, 10}, // PAL@50Hz
-    {GS_MODE_NTSC,       16,  704,  480,  2, 4, GS_INTERLACED,    GS_FIELD, RM_ARATIO_4_3, 54, 59}, // NTSC@60Hz
-    {GS_MODE_DTV_480P,   31,  704,  480,  2, 2, GS_NONINTERLACED, GS_FRAME, RM_ARATIO_4_3,  1,  1}, // DTV480P@60Hz
-    {GS_MODE_DTV_576P,   31,  704,  576,  2, 2, GS_NONINTERLACED, GS_FRAME, RM_ARATIO_4_3,  1,  1}, // DTV576P@50Hz
+    {GS_MODE_PAL,        16,  704,  576,  2, 4, GS_INTERLACED,    GS_FIELD, RM_ARATIO_4_3, 12, 11}, // PAL@50Hz
+    {GS_MODE_NTSC,       16,  704,  480,  2, 4, GS_INTERLACED,    GS_FIELD, RM_ARATIO_4_3, 10, 11}, // NTSC@60Hz
+    {GS_MODE_DTV_480P,   31,  704,  480,  2, 2, GS_NONINTERLACED, GS_FRAME, RM_ARATIO_4_3, 10, 11}, // DTV480P@60Hz
+    {GS_MODE_DTV_576P,   31,  704,  576,  2, 2, GS_NONINTERLACED, GS_FRAME, RM_ARATIO_4_3, 12, 11}, // DTV576P@50Hz
     // 16 bit color mode full screen, multi-pass (3 passes, HIRES)
     {GS_MODE_DTV_720P,   31, 1280,  720,  3, 1, GS_NONINTERLACED, GS_FRAME, RM_ARATIO_16_9, 1,  1}, // HDTV720P@60Hz
     {GS_MODE_DTV_1080I,  31, 1920, 1080,  3, 1, GS_INTERLACED,    GS_FRAME, RM_ARATIO_16_9, 1,  1}, // HDTV1080I@60Hz
 };
+// clang-format on
 
 // Display Aspect Ratio
 static int iAspectWidth = 4;
@@ -69,10 +71,6 @@ static int iDisplayWidth;
 static int iDisplayHeight;
 static int iDisplayXOff;
 static int iDisplayYOff;
-
-// Transposition values - all rendering will be transposed (moved on screen) by these
-static float transX = 0.0f;
-static float transY = 0.0f;
 
 // Transposition values including overscan compensation
 static float fRenderXOff = 0.0f;
@@ -109,8 +107,7 @@ void rmEndFrame(void)
     if (hires) {
         gsKit_hires_sync(gsGlobal);
         gsKit_hires_flip(gsGlobal);
-    }
-    else {
+    } else {
         gsKit_set_finish(gsGlobal);
         gsKit_queue_exec(gsGlobal);
 
@@ -137,8 +134,7 @@ void rmEndFrame(void)
 
 static int rmOnVSync(void)
 {
-    if (guiWakeupCount == 0)
-    {
+    if (guiWakeupCount == 0) {
         guiWakeupCount = 1;
         iWakeupThread(guiThreadID);
     }
@@ -153,6 +149,7 @@ void rmInit()
 
     rm_mode_table[RM_VMODE_AUTO].mode = mode;
     rm_mode_table[RM_VMODE_AUTO].height = (mode == GS_MODE_PAL) ? 512 : 448;
+    rm_mode_table[RM_VMODE_AUTO].PAR1 = (mode == GS_MODE_PAL) ? 16 : 14;
 
     dmaKit_init(D_CTRL_RELE_OFF, D_CTRL_MFD_OFF, D_CTRL_STS_UNSPEC,
                 D_CTRL_STD_OFF, D_CTRL_RCYC_8, 1 << DMA_CHANNEL_GIF);
@@ -185,8 +182,7 @@ int rmSetMode(int force)
 
         if (hires) {
             gsGlobal = gsKit_hires_init_global();
-        }
-        else {
+        } else {
             gsGlobal = gsKit_init_global();
             vsync_id = gsKit_add_vsync_handler(&rmOnVSync);
         }
@@ -217,13 +213,12 @@ int rmSetMode(int force)
 
         // Coordinate space ranges from 0 to 4096 pixels
         // Center the buffer in the coordinate space
-        gsGlobal->OffsetX = ((4096 - gsGlobal->Width)  / 2) * 16;
+        gsGlobal->OffsetX = ((4096 - gsGlobal->Width) / 2) * 16;
         gsGlobal->OffsetY = ((4096 - gsGlobal->Height) / 2) * 16;
 
         if (hires) {
             gsKit_hires_init_screen(gsGlobal, rm_mode_table[vmode].passes);
-        }
-        else {
+        } else {
             gsKit_init_screen(gsGlobal);
             gsKit_mode_switch(gsGlobal, GS_ONESHOT);
         }
@@ -235,8 +230,7 @@ int rmSetMode(int force)
         if (hires) {
             gsKit_hires_sync(gsGlobal);
             gsKit_hires_flip(gsGlobal);
-        }
-        else {
+        } else {
             gsKit_clear(gsGlobal, gColBlack);
             gsKit_sync_flip(gsGlobal);
         }
@@ -268,8 +262,7 @@ void rmEnd(void)
 {
     if (hires) {
         gsKit_hires_deinit_global(gsGlobal);
-    }
-    else {
+    } else {
         gsKit_deinit_global(gsGlobal);
         gsKit_remove_vsync_handler(vsync_id);
     }
@@ -277,8 +270,8 @@ void rmEnd(void)
     vmode = -1;
 }
 
-#define X_SCALE(x) (((x)*iDisplayWidth) /640)
-#define Y_SCALE(y) (((y)*iDisplayHeight)/480)
+#define X_SCALE(x) (((x)*iDisplayWidth) / 640)
+#define Y_SCALE(y) (((y)*iDisplayHeight) / 480)
 /** If txt is null, don't use DIM_UNDEF size */
 static void rmSetupQuad(GSTEXTURE *txt, int x, int y, short aligned, int w, int h, short scaled, u64 color, rm_quad_t *q)
 {
@@ -329,8 +322,7 @@ void rmDrawQuad(rm_quad_t *q)
     if ((q->txt->PSM == GS_PSM_CT32) || (q->txt->Clut && q->txt->ClutPSM == GS_PSM_CT32)) {
         gsGlobal->PrimAlphaEnable = GS_SETTING_ON;
         gsKit_set_test(gsGlobal, GS_ATEST_ON);
-    }
-    else {
+    } else {
         gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
         gsKit_set_test(gsGlobal, GS_ATEST_OFF);
     }
@@ -418,7 +410,7 @@ void rmSetAspectRatio(enum rm_aratio dar)
 {
     DAR = dar;
 
-    switch(DAR) {
+    switch (DAR) {
         case RM_ARATIO_4_3:
             iAspectWidth = 4; // width = width * 4 / 4
             break;
@@ -436,7 +428,7 @@ int rmWideScale(int x)
 // Get the pixel aspect ratio (how wide or narrow are the pixels?)
 float rmGetPAR()
 {
-    float fPAR = (float)rm_mode_table[vmode].PAR1 / (float)rm_mode_table[vmode].PAR2;
+    float fPAR = (float)rm_mode_table[vmode].PAR2 / (float)rm_mode_table[vmode].PAR1;
 
     // In anamorphic mode the pixels are stretched to 16:9
     if ((DAR == RM_ARATIO_16_9) && (rm_mode_table[vmode].aratio == RM_ARATIO_4_3))
@@ -470,37 +462,26 @@ int rmScaleY(int y)
 
 int rmUnScaleX(int x)
 {
-    return (x*640)/iDisplayWidth;
+    return (x * 640) / iDisplayWidth;
 }
 
 int rmUnScaleY(int y)
 {
-    return (y*480)/iDisplayHeight;
-}
-
-static void rmUpdateRenderOffsets()
-{
-    fRenderXOff = (float)iDisplayXOff + transX - 0.5f;
-    fRenderYOff = (float)iDisplayYOff + transY - 0.5f;
-
-    if (rmGetInterlacedFrameMode() == 1)
-        fRenderYOff += 0.25f;
+    return (y * 480) / iDisplayHeight;
 }
 
 void rmSetOverscan(int overscan)
 {
-    iDisplayXOff = (gsGlobal->Width  * overscan) / (2 * 1000);
+    iDisplayXOff = (gsGlobal->Width * overscan) / (2 * 1000);
     iDisplayYOff = (gsGlobal->Height * overscan) / (2 * 1000);
-    iDisplayWidth  = gsGlobal->Width  - (2 * iDisplayXOff);
+    iDisplayWidth = gsGlobal->Width - (2 * iDisplayXOff);
     iDisplayHeight = gsGlobal->Height - (2 * iDisplayYOff);
-    rmUpdateRenderOffsets();
-}
 
-void rmSetTransposition(float x, float y)
-{
-    transX = X_SCALE(x);
-    transY = Y_SCALE(y);
-    rmUpdateRenderOffsets();
+    fRenderXOff = (float)iDisplayXOff - 0.5f;
+    fRenderYOff = (float)iDisplayYOff - 0.5f;
+
+    if (rmGetInterlacedFrameMode() == 1)
+        fRenderYOff += 0.25f;
 }
 
 unsigned char rmGetHsync(void)

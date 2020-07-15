@@ -13,9 +13,7 @@
 #include "include/fntsys.h"
 #include "include/themes.h"
 #include "include/util.h"
-
 #include "include/sound.h"
-#include <audsrv.h>
 
 // UI spacing of the dialogues (pixels between consecutive items)
 #define UI_SPACING_H 10
@@ -95,9 +93,9 @@ int diaShowKeyb(char *text, int maxLen, int hide_text, const char *title)
 
         //Title
         if (title != NULL) {
-          fntRenderString(gTheme->fonts[0], 25, 20, ALIGN_NONE, 0, 0, title, gTheme->textColor);
-          // separating line
-          rmDrawLine(25, 38, 615, 38, gColWhite);
+            fntRenderString(gTheme->fonts[0], 25, 20, ALIGN_NONE, 0, 0, title, gTheme->textColor);
+            // separating line
+            rmDrawLine(25, 38, 615, 38, gColWhite);
         }
 
         //Text
@@ -397,11 +395,10 @@ static int diaShouldBreakLineAfter(struct UIItem *ui)
 static void diaDrawHint(int text_id)
 {
     int x, y;
-
     char *text = _l(text_id);
 
-    x = screenWidth - fntCalcDimensions(gTheme->fonts[0], text) - 10;
-    y = gTheme->usedHeight - 40;
+    x = screenWidth - rmUnScaleX(fntCalcDimensions(gTheme->fonts[0], text)) - 10;
+    y = gTheme->usedHeight - 62;
 
     // render hint on the lower side of the screen.
     rmDrawRect(x, y, screenWidth - x, MENU_ITEM_HEIGHT + 10, gColDarker);
@@ -502,7 +499,7 @@ static void diaRenderItem(int x, int y, struct UIItem *item, int selected, int h
             if (strlen(item->stringvalue.text)) {
                 len = min(strlen(item->stringvalue.text), sizeof(stars) - 1);
                 for (i = 0; i < len; ++i)
-                   stars[i] = '*';
+                    stars[i] = '*';
 
                 stars[i] = '\0';
                 *w = fntRenderString(gTheme->fonts[0], x, y, ALIGN_NONE, 0, 0, stars, txtcol) - x;
@@ -536,7 +533,7 @@ static void diaRenderItem(int x, int y, struct UIItem *item, int selected, int h
 
             rmDrawRect(x, y + 3, *w, *h, txtcol);
             u64 dcol = GS_SETREG_RGBA(item->colourvalue.r, item->colourvalue.g, item->colourvalue.b, 0x80);
-            rmDrawRect(x + 2, y + 5, *w-4, *h-4, dcol);
+            rmDrawRect(x + 2, y + 5, *w - 4, *h - 4, dcol);
 
             break;
         }
@@ -613,8 +610,14 @@ void diaRenderUI(struct UIItem *ui, short inMenu, struct UIItem *cur, int haveFo
         diaDrawHint(cur->hintId);
     }
 
-    guiDrawIconAndText(gSelectButton == KEY_CIRCLE ? CIRCLE_ICON : CROSS_ICON, _STR_SELECT, gTheme->fonts[0], 420, 417, gTheme->selTextColor);
-    guiDrawIconAndText(gSelectButton == KEY_CIRCLE ? CROSS_ICON : CIRCLE_ICON, _STR_BACK, gTheme->fonts[0], 500, 417, gTheme->selTextColor);
+    int uiHints[2] = {_STR_SELECT, _STR_BACK};
+    int uiIcons[2] = {CIRCLE_ICON, CROSS_ICON};
+    int uiY = gTheme->usedHeight - 32;
+    int uiX = guiAlignSubMenuHints(2, uiHints, uiIcons, gTheme->fonts[0], 12, 2);
+
+    uiX = guiDrawIconAndText(gSelectButton == KEY_CIRCLE ? uiIcons[0] : uiIcons[1], uiHints[0], gTheme->fonts[0], uiX, uiY, gTheme->textColor);
+    uiX += 12;
+    uiX = guiDrawIconAndText(gSelectButton == KEY_CIRCLE ? uiIcons[1] : uiIcons[0], uiHints[1], gTheme->fonts[0], uiX, uiY, gTheme->textColor);
 }
 
 /// sets the ui item value to the default again
@@ -666,16 +669,14 @@ static int diaHandleInput(struct UIItem *item, int *modified)
             sfxPlay(SFX_CURSOR);
             if (item->intvalue.current < item->intvalue.max) {
                 item->intvalue.current++;
-            }
-            else {
+            } else {
                 item->intvalue.current = item->intvalue.min; //was "= 0;"
             }
         } else if (getKey(KEY_DOWN)) {
             sfxPlay(SFX_CURSOR);
             if (item->intvalue.current > item->intvalue.min) {
                 item->intvalue.current--;
-            }
-            else {
+            } else {
                 item->intvalue.current = item->intvalue.max;
             }
         } else
@@ -706,8 +707,7 @@ static int diaHandleInput(struct UIItem *item, int *modified)
         if (getKey(KEY_UP) && (item->intvalue.current > 0)) {
             item->intvalue.current--;
             sfxPlay(SFX_CURSOR);
-        }
-        else if (getKey(KEY_DOWN) && (item->intvalue.enumvalues[item->intvalue.current + 1] != NULL)) {
+        } else if (getKey(KEY_DOWN) && (item->intvalue.enumvalues[item->intvalue.current + 1] != NULL)) {
             item->intvalue.current++;
             sfxPlay(SFX_CURSOR);
         }
@@ -896,66 +896,36 @@ int diaExecuteDialog(struct UIItem *ui, int uiId, short inMenu, int (*updater)(i
             }
         } else {
             modified = 0;
+            struct UIItem *newf = cur;
+
             if (getKey(KEY_LEFT)) {
-                struct UIItem *newf = diaGetPrevControl(cur, ui);
-
-                if (!toggleSfx) {
-                    sfxPlay(SFX_CURSOR);
-                }
-
-                if (newf == cur) {
-                    cur = diaGetLastControl(ui);
-                }
-                else {
-                    cur = newf;
-                }
+                newf = diaGetPrevControl(cur, ui);
+                if (newf == cur)
+                    newf = diaGetLastControl(ui);
             }
 
             if (getKey(KEY_RIGHT)) {
-                struct UIItem *newf = diaGetNextControl(cur, cur);
-
-                if (!toggleSfx) {
-                    sfxPlay(SFX_CURSOR);
-                }
-
-                if (newf == cur) {
-                    cur = diaGetFirstControl(ui);
-                }
-                else {
-                    cur = newf;
-                }
+                newf = diaGetNextControl(cur, cur);
+                if (newf == cur)
+                    newf = diaGetFirstControl(ui);
             }
 
             if (getKey(KEY_UP)) {
-                // find
-                struct UIItem *newf = diaGetPrevLine(cur, ui);
-
-                if (!toggleSfx) {
-                    sfxPlay(SFX_CURSOR);
-                }
-
-                if (newf == cur) {
-                    cur = diaGetLastControl(ui);
-                }
-                else {
-                    cur = newf;
-                }
+                newf = diaGetPrevLine(cur, ui);
+                if (newf == cur)
+                    newf = diaGetLastControl(ui);
             }
 
             if (getKey(KEY_DOWN)) {
-                // find
-                struct UIItem *newf = diaGetNextLine(cur, ui);
+                newf = diaGetNextLine(cur, ui);
+                if (newf == cur)
+                    newf = diaGetFirstControl(ui);
+            }
 
-                if (!toggleSfx) {
-                    sfxPlay(SFX_CURSOR);
-                }
-
-                if (newf == cur) {
-                    cur = diaGetFirstControl(ui);
-                }
-                else {
-                    cur = newf;
-                }
+            if (newf != cur) {
+                // Navigation change detected
+                sfxPlay(SFX_CURSOR);
+                cur = newf;
             }
 
             // Cancel button breaks focus or exits with false result

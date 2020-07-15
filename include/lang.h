@@ -128,7 +128,7 @@ enum _STR_IDS {
     _STR_USE_GENERIC,
     _STR_VMC_SCREEN,
     _STR_VMC_NAME,
-    _STR_VMC_SIZE,
+    _STR_SIZE,
     _STR_VMC_STATUS,
     _STR_VMC_PROGRESS,
     _STR_VMC_FILE_EXISTS,
@@ -146,7 +146,7 @@ enum _STR_IDS {
     _STR_VMODE,
     _STR_UICOLOR,
     _STR_SELCOLOR,
-    _STR_USE_INFO_SCREEN,
+    _STR_RESETCOLOR,
     _STR_INFO,
     _STR_ALTSTARTUP,
     _STR_COLOR_SELECTION,
@@ -267,6 +267,23 @@ enum _STR_IDS {
     _STR_BOOT_SND_VOLUME,
     _STR_CFM_VMODE_CHG,
     _STR_CACHE_HDD_GAME_LIST,
+    _STR_ENABLE_NOTIFICATIONS,
+    _STR_NOTIFICATIONS,
+    _STR_GAME_MENU,
+    _STR_GAME_SETTINGS_SAVED,
+    _STR_GAME_SETTINGS_REMOVED,
+    _STR_NET_UPDATE_HINT,
+    _STR_SETTINGS_SOURCE,
+    _STR_GLOBAL_SETTINGS,
+    _STR_PERGAME_SETTINGS,
+    _STR_ALL_SETTINGS,
+    _STR_GAME_SETTINGS_PROMPT,
+    _STR_FORUM_DETAILS,
+    _STR_INFO_TITLE,
+    _STR_INFO_GENRE,
+    _STR_INFO_RELEASE,
+    _STR_INFO_DEVELOPER,
+    _STR_INFO_DESCRIPTION,
 
     LANG_STR_COUNT
 };
@@ -283,14 +300,16 @@ typedef struct
     char *name;
 } language_t;
 
+int lngAddLanguages(char *path, const char *separator, int mode);
 void lngInit(void);
 char *lngGetValue(void);
 void lngEnd(void);
 
 // Indices are shifted in GUI, as we add the internal english language at 0
-void lngSetGuiValue(int langGuiId);
+int lngSetGuiValue(int langID);
 int lngGetGuiValue(void);
 int lngFindGuiID(const char *lang);
 char **lngGetGuiList(void);
+char *lngGetFilePath(int langID);
 
 #endif

@@ -3,6 +3,7 @@
 
 #include <gsToolkit.h>
 #include "include/config.h"
+#include "include/dia.h"
 
 /// a single submenu item
 typedef struct submenu_item
@@ -81,6 +82,7 @@ typedef struct menu_list
 void menuInit();
 void menuEnd();
 void menuReinitMainMenu(void);
+void menuInitGameMenu(void);
 
 void menuAppendItem(menu_item_t *item);
 
@@ -93,14 +95,17 @@ void submenuSort(submenu_list_t **submenu);
 char *submenuItemGetText(submenu_item_t *it);
 char *menuItemGetText(menu_item_t *it);
 config_set_t *menuLoadConfig();
+config_set_t *gameMenuLoadConfig(struct UIItem *ui);
 void menuSaveConfig();
 
 void menuRenderMain();
 void menuRenderMenu();
 void menuRenderInfo();
+void menuRenderGameMenu();
 void menuHandleInputMain();
 void menuHandleInputMenu();
 void menuHandleInputInfo();
+void menuHandleInputGameMenu();
 
 // Sets the selected item if it is found in the menu list
 void menuSetSelectedItem(menu_item_t *item);

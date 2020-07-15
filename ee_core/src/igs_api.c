@@ -23,6 +23,8 @@
  */
 
 #include "include/igs_api.h"
+#define NEWLIB_PORT_AWARE
+#include "fileio.h"
 
 static void FastDelay(int count)
 {
@@ -184,7 +186,10 @@ static void Screenshot(u16 sbp, u8 sbw, u8 spsm, u16 width, u16 height, u32 dime
     GS_BGCOLOUR = 0xCCFFFF; //Light Yellow
 
     static u32 EnableGIFPATH3[4] ALIGNED(16) = {
-        GS_VIF1_MSKPATH3(0), GS_VIF1_NOP, GS_VIF1_NOP, GS_VIF1_NOP,
+        GS_VIF1_MSKPATH3(0),
+        GS_VIF1_NOP,
+        GS_VIF1_NOP,
+        GS_VIF1_NOP,
     };
 
     u32 DMAChain[20 * 2] ALIGNED(16);

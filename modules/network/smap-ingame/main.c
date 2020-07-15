@@ -112,7 +112,7 @@ static err_t SMapIFInit(NetIF *pNetIF)
 #ifdef PRE_LWIP_130_COMPAT
     pNetIF->output = &SMapOutput; // For LWIP versions before v1.3.0.
 #else
-    pNetIF->output = &etharp_output; // For LWIP 1.3.0 and later.
+    pNetIF->output = &etharp_output;                                                  // For LWIP 1.3.0 and later.
 #endif
     pNetIF->linkoutput = &SMapLowLevelOutput;
     pNetIF->hwaddr_len = NETIF_MAX_HWADDR_LEN;
@@ -136,7 +136,7 @@ static err_t SMapIFInit(NetIF *pNetIF)
     return ERR_OK;
 }
 
-inline void SMapLowLevelInput(PBuf *pBuf)
+void SMapLowLevelInput(PBuf *pBuf)
 {
     //When we receive data, the interrupt-handler will invoke this function, which means we are in an interrupt-context. Pass on
     //the received data to ps2ip.

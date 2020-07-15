@@ -56,6 +56,8 @@
 
 	/* padhook.c */
 	.extern Install_PadOpen_Hook
+	.extern Reset_Padhook
+	.extern Install_IGR
 
 	.globl  g_argbuf
 	.globl	Hook_SifSetDma
@@ -263,6 +265,10 @@ Hook_ExecPS2:
 	/* change the stack pointer */
 	la	$sp, _end
 
+	/* call Reset_Padhook to indicate that ExecPS2 will be run. */
+	jal	Reset_Padhook
+	nop
+
 	/* call Install_PadOpen_Hook */
 	lui	$a0, 0x0010
 	lui	$a1, 0x01ff
@@ -381,10 +387,17 @@ InitRegsExecPS2:
 	por $t1, $zero, $zero
 	por $t2, $zero, $zero
 	por $t3, $zero, $zero
+.ifdef .gasversion.
+	por $a4, $zero, $zero
+	por $a5, $zero, $zero
+	por $a6, $zero, $zero
+	por $a7, $zero, $zero
+.else
 	por $t4, $zero, $zero
 	por $t5, $zero, $zero
 	por $t6, $zero, $zero
 	por $t7, $zero, $zero
+.endif
 	por $s0, $zero, $zero
 	por $s1, $zero, $zero
 	por $s2, $zero, $zero

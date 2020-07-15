@@ -31,6 +31,8 @@
 #include <usbd.h>
 #include "ioman_add.h"
 
+#include <defs.h>
+
 #define MODNAME "cdvd_driver"
 IRX_ID(MODNAME, 1, 1);
 
@@ -209,10 +211,9 @@ static iop_sys_clock_t gCallbackSysClock;
 
 // buffers
 #define CDVDMAN_BUF_SECTORS 2
+#define CDVDFSV_ALIGNMENT 64
 static u8 cdvdman_buf[CDVDMAN_BUF_SECTORS * 2048];
-
-#define CDVDMAN_FS_BUFSIZE CDVDMAN_FS_SECTORS * 2048
-static u8 cdvdman_fs_buf[CDVDMAN_FS_BUFSIZE + 2 * 2048];
+static u8 cdvdman_fs_buf[CDVDMAN_FS_SECTORS * 2048 + CDVDFSV_ALIGNMENT];
 
 #define CDVDMAN_MODULE_VERSION 0x225
 static int cdvdman_debug_print_flag = 0;
@@ -240,11 +241,10 @@ static void oplShutdown(int poff)
     int stat;
 
     DeviceLock();
-    if(vmcShutdownCb != NULL)
+    if (vmcShutdownCb != NULL)
         vmcShutdownCb();
     DeviceUnmount();
-    if (poff)
-    {
+    if (poff) {
         DeviceStop();
 #ifdef __USE_DEV9
         dev9Shutdown();
@@ -385,12 +385,18 @@ static int cdvdman_read_sectors(u32 lsn, unsigned int sectors, void *buf)
             break;
         }
 
-        // PS2LOGO Decryptor algorithm; based on misfire's code (https://github.com/mlafeldt/ps2logo)
+        /* PS2LOGO Decryptor algorithm; based on misfire's code (https://github.com/mlafeldt/ps2logo)
+           The PS2 logo is stored within the first 12 sectors, scrambled.
+           This algorithm exploits the characteristic that the value used for scrambling will be recorded,
+           when it is XOR'ed against a black pixel. The first pixel is black, hence the value of the first byte
+           was the value used for scrambling. */
         if (lsn < 13) {
             u32 j;
             u8 *logo = (u8 *)ptr;
-            u8 key = logo[0];
-            if (logo[0] != 0) {
+            static u8 key = 0;
+            if (lsn == 0) //First sector? Copy the first byte as the value for unscrambling the logo.
+                key = logo[0];
+            if (key != 0) {
                 for (j = 0; j < (SectorsToRead * 2048); j++) {
                     logo[j] ^= key;
                     logo[j] = (logo[j] << 3) | (logo[j] >> 5);
@@ -416,6 +422,7 @@ static int cdvdman_read(u32 lsn, u32 sectors, void *buf)
 {
     cdvdman_stat.status = CDVD_STAT_READ;
 
+    buf = (void *)PHYSADDR(buf);
 #ifdef HDD_DRIVER //As of now, only the ATA interface requires this. We do this here to share cdvdman_buf.
     if ((u32)(buf)&3) {
         //For transfers to unaligned buffers, a double-copy is required to avoid stalling the device's DMA channel.
@@ -1792,14 +1799,16 @@ static void cdvdman_cdread_Thread(void *args)
         cdvdman_read(cdvdman_stat.cdread_lba, cdvdman_stat.cdread_sectors, cdvdman_stat.cdread_buf);
 
         /* This streaming callback is not compatible with the original SONY stream channel 0 (IOP) callback's design.
-			The original is run from the interrupt handler, but we want it to run
-			from a threaded environment because it's easier to protect critical regions. */
-        if (Stm0Callback != NULL)
-	{
+	   The original is run from the interrupt handler, but we want it to run
+	   from a threaded environment because our interrupt is emulated. */
+        if (Stm0Callback != NULL) {
             cdvdman_signal_read_end();
-            Stm0Callback();
-	}
-        else
+
+            /* Check that the streaming callback was not cleared, as this pointer may get changed between function calls.
+               As per the original semantics, once it is cleared, then it should not be called. */
+            if (Stm0Callback != NULL)
+                Stm0Callback();
+        } else
             cdvdman_cb_event(SCECdFuncRead); //Only runs if streaming is not in action.
     }
 }
